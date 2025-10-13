@@ -1,0 +1,49 @@
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.ipynb_checkpoints/
+
+# Python artifacts
+__pycache__/
+*.pyc
+.venv/
+.env
+.envrc
+
+# -----------------------------
+# Notebooks: ignore by default
+# -----------------------------
+notebooks/*
+!notebooks/.gitkeep
+# Whitelist 00_ElectricityDemand_DomainResearch:
+!notebooks/00_ElectricityDemand_DomainResearch.ipynb
+# Whitelist 01_OPSD_EDA.ipynb:
+!notebooks/01_OPSD_EDA.ipynb
+
+# ---------------------------------------
+# Data: ignore raw/processed by default
+# ---------------------------------------
+data/raw/*
+!data/raw/.gitkeep
+# Whitelist dummie for later on:
+# !data/raw/allowed_small.csv
+# !data/raw/curated/
+# !data/raw/curated/**
+
+data/processed/*
+!data/processed/.gitkeep
+# Whitelist dummies:
+# !data/processed/curated/
+# !data/processed/curated/**
+# !data/processed/small_example.csv
+
+# (Optional) common large/binary formats (CSV stays allowed)
+*.parquet
+*.feather
+*.h5
+*.zip
+*.7z
+*.tar
+*.tar.gz
+*.csv.gz
