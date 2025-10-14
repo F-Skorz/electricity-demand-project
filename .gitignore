@@ -20,6 +20,8 @@ notebooks/*
 !notebooks/00_ElectricityDemand_DomainResearch.ipynb
 # Whitelist 01_OPSD_EDA.ipynb:
 !notebooks/01_OPSD_EDA.ipynb
+# Whitelist 02_HolidaysAndSchoolFreeDays.ipynb:
+!notebooks/02_HolidaysAndSchoolFreeDays.ipynb
 
 # ---------------------------------------
 # Data: ignore raw/processed by default
