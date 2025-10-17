@@ -1,6 +1,6 @@
-################
-# src/eda_utils.py    #
-################
+###########################
+# src/eda_utils.py
+###########################
 
 from __future__ import annotations
 import pandas as pd
@@ -13,6 +13,8 @@ __all__ = [
     "build_nan_stats",
     "missingness_mask",
 ]
+
+
 
 
 def nan_stats(df: pd.DataFrame) -> list[tuple[str, int, float]]:
@@ -86,8 +88,8 @@ def triples_to_df(triples: list[tuple]) -> pd.DataFrame:
             col, n, frac = item
         # ((col, n, frac),)
         elif (
-            isinstance(item, (list, tuple)) and len(item) == 1 and
-            isinstance(item[0], (list, tuple)) and len(item[0]) == 3
+            isinstance(item, (list, tuple)) and len(item) == 1
+            and isinstance(item[0], (list, tuple)) and len(item[0]) == 3
         ):
             col, n, frac = item[0]
         else:
@@ -117,5 +119,40 @@ def build_nan_stats(
     descending : bool, default True
         Sort order.
     nan_position : {"last","first"}, default "last"
-        Where to plac
-   """
+        Where to place NaNs in the sorted output.
+
+    Returns
+    -------
+    (list_of_triples, tidy_df)
+        - list_of_triples: sorted (column, n_missing, frac_missing)
+        - tidy_df: DataFrame with columns ["column", "n_missing", "frac_missing"]
+    """
+    triples = nan_stats(df)
+    sorted_triples = sort_triples_by_index(
+        triples,
+        index=sort_index,
+        descending=descending,
+        nan_position=nan_position,
+    )
+    tidy = triples_to_df(sorted_triples)
+    return sorted_triples, tidy
+
+
+def missingness_mask(df: pd.DataFrame, time_cols: tuple[str, ...] = ("utc_timestamp", "cet_cest_timestamp")) -> pd.DataFrame:
+    """
+    Build a missingness mask:
+      - Columns listed in `time_cols` are copied through unchanged (even if not datetime dtype yet).
+      - Other columns become float masks: 1.0 if NaN, 0.0 if not NaN.
+
+    The index is preserved as-is.
+    """
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError("missingness_mask expects a pandas DataFrame.")
+
+    out = pd.DataFrame(index=df.index)
+    for col in df.columns:
+        if col in time_cols:
+            out[col] = df[col]  # pass through untouched (string timestamps are OK)
+        else:
+            out[col] = df[col].isna().astype("float64")
+    return out

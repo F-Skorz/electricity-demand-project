@@ -1,6 +1,6 @@
-###################
-# src/plotting_utils.py    #
-###################
+##############################
+# src/plotting_utils.py      #
+##############################
 
 """
 Plotting utilities for aggregating and visualizing time series.
@@ -16,33 +16,35 @@ Notes on granularity and pandas defaults
 """
 
 from __future__ import annotations
+from typing import Optional, Tuple
 import pandas as pd
 import matplotlib.pyplot as plt
-from typing import Tuple, Optional
 
 __all__ = [
+    "_coerce_dates",
+    "_ensure_dt_index",
     "aggregate_timeseries",
     "plot_dual_timeseries",
 ]
 
 # Time resolutions to downsample to
 ALLOWED_GRANULARITY = {"H", "D", "W", "M", "Y"}
-#   Defaults for pandas downsampling:
+# Pandas resampling defaults:
 # - W  : week ends on Sunday (W-SUN)
 # - M  : month-end
 # - Y  : Dec-end (A-DEC)
 # - label='left', closed='left'
 
 
-# Replace _ensure_dt_index with this safer version
-def _ensure_dt_index(df: pd.DataFrame, time_col: str) -> pd.DataFrame:
-    """Return a copy of df with a UTC DatetimeIndex. Does not mutate input.
+def _coerce_dates(start_date, end_date) -> Tuple[Optional[pd.Timestamp], Optional[pd.Timestamp]]:
+    """Accept strings / datetime-like / None and return (start_ts, end_ts) as pandas Timestamps."""
+    start_ts = pd.to_datetime(start_date) if start_date is not None else None
+    end_ts   = pd.to_datetime(end_date)   if end_date   is not None else None
+    return start_ts, end_ts
 
-    Requirements
-    -----------
-    - If df already has a DatetimeIndex, it is converted/localized to UTC.
-    - Otherwise, df must contain `time_col`; it will be parsed to UTC and set as index.
-    """
+
+def _ensure_dt_index(df: pd.DataFrame, time_col: str) -> pd.DataFrame:
+    """Return a copy of df with a UTC DatetimeIndex. Does not mutate input."""
     out = df.copy()
     if isinstance(out.index, pd.DatetimeIndex):
         out.index = out.index.tz_localize("UTC") if out.index.tz is None else out.index.tz_convert("UTC")
@@ -71,42 +73,6 @@ def aggregate_timeseries(
     """
     Create an aggregated time series for `column` between `start_date` and `end_date`,
     indexed by `time_col` (default: "utc_timestamp").
-
-    Steps
-    -----
-    1) Ensure a UTC DatetimeIndex using `time_col`.
-    2) Slice the series to the closed interval [start_date, end_date].
-    3) If `granularity` is not hourly, resample to the chosen frequency using the mean.
-    4) Apply a coverage rule per bin: only keep the mean if coverage ≥ `coverage_threshold`
-       (default 0.5); otherwise set the bin to NA.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Input DataFrame containing `time_col` and `column`.
-    start_date, end_date : pd.Timestamp | str
-        Date bounds (inclusive) for slicing.
-    column : str
-        Target column to aggregate.
-    granularity : {"H","D","W","M","Y"}
-        Resampling frequency. Must be one of ALLOWED_GRANULARITY.
-    time_col : str, default "utc_timestamp"
-        Timestamp column used to build/set the DatetimeIndex (UTC).
-    coverage_threshold : float, default 0.5
-        Minimum fraction of non-NA values within a resampling bin to keep the mean.
-
-    Returns
-    -------
-    pd.DataFrame
-        Single-column DataFrame named `column`, indexed by UTC timestamps at the requested
-        granularity, with bins failing the coverage rule set to NA.
-
-    Raises
-    ------
-    KeyError
-        If `column` is missing.
-    ValueError
-        If `granularity` is not allowed, or the selected window is empty.
     """
     if column not in df.columns:
         raise KeyError(f"Column not found: {column!r}")
@@ -114,15 +80,12 @@ def aggregate_timeseries(
         raise ValueError(f"granularity must be one of {sorted(ALLOWED_GRANULARITY)}")
 
     start, end = _coerce_dates(start_date, end_date)
-    # Ensure datetime index on the full frame first
     x = _ensure_dt_index(df, time_col)
-    # Now select the single column
     x = x[[column]]
-    # Slice closed interval
     sliced = x.loc[start:end]
     if sliced.empty:
         raise ValueError(f"Selected window {start}–{end} has no rows for column {column!r}.")
-    # Downsample with mean and apply coverage rule
+
     grouped = sliced.resample(granularity).agg({column: ["mean", "count", "size"]})
     mean = grouped[(column, "mean")].to_frame(name=column)
     count = grouped[(column, "count")]
@@ -132,7 +95,94 @@ def aggregate_timeseries(
     return mean
 
 
+def _first_col_as_series(df: pd.DataFrame) -> pd.Series:
+    """Return the first (and only) column as a Series, preserving the index/name."""
+    if not isinstance(df, pd.DataFrame) or df.shape[1] == 0:
+        raise ValueError("Expected a single-column DataFrame.")
+    s = df.iloc[:, 0]
+    # ensure series has a name for legend
+    if s.name is None and df.columns.size:
+        s.name = df.columns[0]
+    return s
+
+
 def plot_dual_timeseries(
+    df: pd.DataFrame,
+    start_date,
+    end_date,
+    column_name_one: str,
+    granularity_one: str,
+    column_name_two: str,
+    granularity_two: str,
+    time_col: str | None = None,
+    coverage_threshold: float = 0.5,
+    title: str | None = None,
+    *,
+    color_one: str | None = None,   # default: matplotlib cycle
+    color_two: str = "red",         # make second series red
+    label_one: str | None = None,
+    label_two: str | None = None,
+):
+    """
+    Plot two time series with separate y-axes. Second series (right axis) is red by default.
+
+    Returns
+    -------
+    (fig, ax1, ax2)
+    """
+    # Correctly pass keyword-only coverage_threshold
+    res1 = aggregate_timeseries(
+        df=df,
+        start_date=start_date,
+        end_date=end_date,
+        column=column_name_one,
+        granularity=granularity_one,
+        time_col=time_col or "utc_timestamp",
+        coverage_threshold=coverage_threshold,
+    )
+    res2 = aggregate_timeseries(
+        df=df,
+        start_date=start_date,
+        end_date=end_date,
+        column=column_name_two,
+        granularity=granularity_two,
+        time_col=time_col or "utc_timestamp",
+        coverage_threshold=coverage_threshold,
+    )
+
+    s1 = _first_col_as_series(res1)
+    s2 = _first_col_as_series(res2)
+
+    if s1.empty or s2.empty:
+        raise ValueError("One of the aggregated series is empty. Check date window / column names.")
+
+    fig, ax1 = plt.subplots(figsize=(10, 5))
+
+    line1_kwargs = {}
+    if color_one is not None:
+        line1_kwargs["color"] = color_one
+    l1, = ax1.plot(s1.index, s1.values, label=label_one or s1.name, **line1_kwargs)
+    ax1.set_xlabel("Time")
+    ax1.set_ylabel(label_one or s1.name)
+
+    ax2 = ax1.twinx()
+    l2, = ax2.plot(s2.index, s2.values, label=label_two or s2.name, color=color_two)
+    ax2.set_ylabel(label_two or s2.name, color=color_two)
+    ax2.tick_params(axis="y", colors=color_two)
+    if "right" in ax2.spines:
+        ax2.spines["right"].set_color(color_two)
+
+    if title:
+        ax1.set_title(title)
+
+    lines = [l1, l2]
+    labels = [ln.get_label() for ln in lines]
+    ax1.legend(lines, labels, loc="upper left")
+
+    fig.tight_layout()
+    return fig, ax1, ax2
+
+def plot_dual_timeseries_old(
     df: pd.DataFrame,
     start_date: pd.Timestamp | str,
     end_date: pd.Timestamp | str,
