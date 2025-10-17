@@ -35,6 +35,8 @@ data/raw/*
 
 data/processed/*
 !data/processed/.gitkeep
+!data/processed/DE_hol_df.parquet
+!data/processed/OPSD_60min_de_lu_df.parquet
 # Whitelist dummies:
 # !data/processed/curated/
 # !data/processed/curated/**
