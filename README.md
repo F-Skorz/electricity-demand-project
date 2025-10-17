@@ -10,14 +10,14 @@ A data-science project analyzing and forecasting electricity demand in Germany. 
 electricity-demand-project/
 │
 ├── data/
-│   ├── raw/              # Original input data (OPSD, DWD, etc.)
-│   ├── processed/   # OPSD data set and German holiday data as parquet
-│   └── external/       # Optional external sources (e.g., UBA, weather APIs)
+│   ├── raw/                                           # Original input data (OPSD, DWD, etc.)
+│   ├── processed/                                 #  OPSD data set and German holiday data as parquet
+│   └── external/                                    # Optional external sources (e.g., UBA, weather APIs)
 │
 ├── notebooks/
-│   ├── 00_ElectricityDemand_DomainResearch.ipynb # Contains fundamental domain knowledge
-│   ├── 01_OPSD_EDA.ipynb                                         # First look at the OPSD data set
-│   └── 02_HolidaysAndSchoolFreeDays.ipynb             # Relevant German holiday data
+│   ├── 00_ElectricityDemand_DomainResearch.ipynb    # Contains fundamental domain knowledge
+│   ├── 01_OPSD_EDA.ipynb                                           # First look at the OPSD data set
+│   └── 02_HolidaysAndSchoolFreeDays.ipynb               # Relevant German holiday data
 │   
 │
 ├── src/
