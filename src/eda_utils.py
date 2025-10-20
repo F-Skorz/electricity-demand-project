@@ -3,21 +3,41 @@
 ###########################
 
 from __future__ import annotations
+import numpy as np
 import pandas as pd
-from pandas.api.types import is_datetime64_any_dtype, is_datetime64tz_dtype
+from pandas.api.types import (
+    is_datetime64_any_dtype,
+    is_datetime64tz_dtype,
+    is_timedelta64_dtype,
+    is_extension_array_dtype,
+)
+from typing import Sequence, Tuple, List
+
+
 
 __all__ = [
-    "nan_stats",
+    "calculate_abs_rel_missingness_per_column",
     "sort_triples_by_index",
     "triples_to_df",
-    "build_nan_stats",
-    "missingness_mask",
+    "build_columnwise_missingness_report",
+    "missingness_mask", 
+    "count_missing_per_row",
 ]
 
 
+#############################
+##       Missingness per Column        ##
+############################# 
 
+#######################################
+#   Absolute count and proportion                           #                
+#    Output: list of triples:                                          #
+#     (<ColumnName>, Count, Fraction)                   #
+#######################################
 
-def nan_stats(df: pd.DataFrame) -> list[tuple[str, int, float]]:
+def calculate_abs_rel_missingness_per_column(
+    df: pd.DataFrame
+) -> List[Tuple[str, int, float]]:
     """
     Return a list of (column_name, abs_nans, rel_nans) for each column in `df`.
 
@@ -35,19 +55,23 @@ def nan_stats(df: pd.DataFrame) -> list[tuple[str, int, float]]:
         A list of triples: (column_name, abs_nans, rel_nans).
     """
     if not isinstance(df, pd.DataFrame):
-        raise TypeError("nan_stats expects a pandas DataFrame.")
+        raise TypeError("The function alculate_abs_rel_missingness_per_column expects a pandas DataFrame as input.")
     abs_nans = df.isna().sum()
     n = len(df)
     rel_nans = (abs_nans / n) if n > 0 else pd.Series(float("nan"), index=df.columns)
     return [(str(col), int(abs_nans[col]), float(rel_nans[col])) for col in df.columns]
 
 
+####################
+##  We sort the triples     # 
+#################### 
+
 def sort_triples_by_index(
-    triples: list[tuple],
+    triples: List[Tuple[str, int, float]],
     index: int = 2,
     descending: bool = True,
-    nan_position: str = "last",  # "last" or "first"
-) -> list[tuple]:
+    nan_position: str = "last",
+) -> List[Tuple[str, int, float]]:
     """
     Return a new list of tuples sorted by the value at `index`.
     NaNs (and None) are treated as missing and placed per `nan_position`.
@@ -62,7 +86,13 @@ def sort_triples_by_index(
     return (missing + normal) if nan_position == "first" else (normal + missing)
 
 
-def triples_to_df(triples: list[tuple]) -> pd.DataFrame:
+
+########################################
+#   list of triples -->  3-column-DataFrame with         #
+#   three columns                                                        #
+########################################
+
+def triples_to_df(triples: List[Tuple[str, int, float]]) -> pd.DataFrame:
     """
     Convert a list of triples into a DataFrame with columns:
     ['column', 'n_missing', 'frac_missing'].
@@ -93,52 +123,43 @@ def triples_to_df(triples: list[tuple]) -> pd.DataFrame:
         ):
             col, n, frac = item[0]
         else:
-            raise ValueError(f"Expected a triple, got: {item!r}")
+            raise ValueError(f"The function triples_to_df expected: a triple. But it got: {item!r}")
         rows.append((str(col), int(n), float(frac)))
 
     return pd.DataFrame(rows, columns=["column", "n_missing", "frac_missing"])
 
 
-def build_nan_stats(
+def build_columnwise_missingness_report(
     df: pd.DataFrame,
     *,
     sort_index: int = 2,
     descending: bool = True,
-    nan_position: str = "last",  # "last" or "first"
-) -> tuple[list[tuple[str, int, float]], pd.DataFrame]:
+    nan_position: str = "last",
+) -> pd.DataFrame:
     """
-    Compute NaN stats for each column of a DataFrame, sort them, and return
-    both the sorted list and a tidy 3-column DataFrame.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Input DataFrame.
-    sort_index : int, default 2
-        Index within each triple to sort by (0=column, 1=n_missing, 2=frac_missing).
-    descending : bool, default True
-        Sort order.
-    nan_position : {"last","first"}, default "last"
-        Where to place NaNs in the sorted output.
-
-    Returns
-    -------
-    (list_of_triples, tidy_df)
-        - list_of_triples: sorted (column, n_missing, frac_missing)
-        - tidy_df: DataFrame with columns ["column", "n_missing", "frac_missing"]
+    Compute and return a sorted, tidy DataFrame with column-wise missingness
+    statistics (absolute & relative).
     """
-    triples = nan_stats(df)
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError("The function build_columnwise_missingness_report expected a pandas DataFrame.")
+
+    triples = calculate_abs_rel_missingness_per_column(df)
     sorted_triples = sort_triples_by_index(
         triples,
         index=sort_index,
         descending=descending,
         nan_position=nan_position,
     )
-    tidy = triples_to_df(sorted_triples)
-    return sorted_triples, tidy
+    return triples_to_df(sorted_triples)
 
 
-def missingness_mask(df: pd.DataFrame, time_cols: tuple[str, ...] = ("utc_timestamp", "cet_cest_timestamp")) -> pd.DataFrame:
+
+
+
+def missingness_mask(
+    df: pd.DataFrame,
+    time_cols: Tuple[str, ...] = ("utc_timestamp", "cet_cest_timestamp"),
+) -> pd.DataFrame:
     """
     Build a missingness mask:
       - Columns listed in `time_cols` are copied through unchanged (even if not datetime dtype yet).
@@ -147,7 +168,7 @@ def missingness_mask(df: pd.DataFrame, time_cols: tuple[str, ...] = ("utc_timest
     The index is preserved as-is.
     """
     if not isinstance(df, pd.DataFrame):
-        raise TypeError("missingness_mask expects a pandas DataFrame.")
+        raise TypeError("The functio missingness_mask expects a pandas DataFrame.")
 
     out = pd.DataFrame(index=df.index)
     for col in df.columns:
@@ -155,4 +176,103 @@ def missingness_mask(df: pd.DataFrame, time_cols: tuple[str, ...] = ("utc_timest
             out[col] = df[col]  # pass through untouched (string timestamps are OK)
         else:
             out[col] = df[col].isna().astype("float64")
+    return out
+
+
+#############################
+##       Missingness per  Row            ##
+############################# 
+
+
+def count_missing_per_row(
+    df: pd.DataFrame,
+    time_cols: Sequence[str] = ("utc_timestamp", "cet_cest_timestamp"),
+    out_col: str = "nan_count",
+) -> pd.DataFrame:
+    """
+    Return a DataFrame with the original index and:
+      - any timestamp columns from `time_cols` that exist in `df` (possibly none),
+      - one column with the number of missing values in each row
+        (counted across ALL columns via pandas.isna()).
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Source DataFrame.
+    time_cols : Sequence[str], default ("utc_timestamp", "cet_cest_timestamp")
+        Timestamp columns to include in the output if present.
+    out_col : str, default "nan_count"
+        Name of the per-row missing count column.
+
+    Returns
+    -------
+    pd.DataFrame
+        Columns: [<existing time cols...>, out_col]
+    """
+    existing_time_cols = [c for c in time_cols if c in df.columns]
+    missing = df.isna().sum(axis=1)
+    out = df.loc[:, existing_time_cols].copy()
+    out[out_col] = missing  # or: missing.astype("Int64")
+    return out
+
+
+def row_missing_breakdown(
+    df: pd.DataFrame,
+    time_cols: Tuple[str, ...] = ("utc_timestamp", "cet_cest_timestamp"),
+    out_prefix: str = "missing_",
+) -> pd.DataFrame:
+    """
+    Per-row missingness breakdown by sentinel:
+      - total  : any missing as defined by pandas.isna()
+      - nan    : np.nan in float/complex dtypes + np.nan present inside object
+      - nat    : NaT in datetime/timedelta dtypes
+      - none   : None inside object dtype
+      - pdNA   : <NA> in pandas' nullable dtypes (Int64, Boolean, String, Float64, etc.) + <NA> in object
+
+    Returns a DataFrame with the original index, the requested time columns,
+    and the above breakdown columns.
+    """
+    out = df.loc[:, [c for c in time_cols if c in df.columns]].copy()
+
+    # total (all standard missings)
+    total = df.isna().sum(axis=1)
+
+    # --- NaT in datetime/timedelta dtypes
+    dt_cols = [c for c in df.columns
+               if is_datetime64_any_dtype(df[c]) or is_timedelta64_dtype(df[c])]
+    nat = df[dt_cols].isna().sum(axis=1) if dt_cols else 0
+
+    # --- np.nan in numeric float/complex dtypes
+    nan_num = df.select_dtypes(include=["float", "complex"]).isna().sum(axis=1)
+
+    # --- nullable dtypes (<NA>)
+    pdna_cols = [c for c in df.columns if is_extension_array_dtype(df[c]) and df[c].dtype.na_value is pd.NA]
+    pdna_ext = df[pdna_cols].isna().sum(axis=1) if pdna_cols else 0
+
+    # --- object dtype breakdown: None, np.nan, <NA>
+    obj = df.select_dtypes(include=["object"])
+    if not obj.empty:
+        none_obj = obj.applymap(lambda x: x is None).sum(axis=1)
+        nan_obj  = obj.applymap(lambda x: isinstance(x, float) and np.isnan(x)).sum(axis=1)
+        pdna_obj = obj.applymap(lambda x: x is pd.NA).sum(axis=1)
+    else:
+        none_obj = nan_obj = pdna_obj = 0
+
+    # combine disjoint pieces
+    nan  = nan_num.add(nan_obj, fill_value=0)
+    pdNA = (pd.Series(0, index=df.index) if isinstance(pdna_ext, int)
+            else pdna_ext).add(pdna_obj if not isinstance(pdna_obj, int) else 0, fill_value=0)
+
+    # assemble output
+    out[out_prefix + "total"] = total
+    out[out_prefix + "nan"]   = nan
+    out[out_prefix + "nat"]   = nat
+    out[out_prefix + "none"]  = none_obj
+    out[out_prefix + "pdNA"]  = pdNA
+
+    # (optional) sanity check—should be equal; tiny mismatches mean a category wasn’t captured
+    # remainder = out[out_prefix + "total"] - (out[out_prefix + "nan"] + out[out_prefix + "nat"] +
+    #                                          out[out_prefix + "none"] + out[out_prefix + "pdNA"])
+    # print("Max remainder:", remainder.max())
+
     return out

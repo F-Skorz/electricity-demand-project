@@ -16,15 +16,16 @@ Notes on granularity and pandas defaults
 """
 
 from __future__ import annotations
-from typing import Optional, Tuple
 import pandas as pd
 import matplotlib.pyplot as plt
+from typing import Optional, Sequence, Tuple
 
 __all__ = [
     "_coerce_dates",
     "_ensure_dt_index",
     "aggregate_timeseries",
     "plot_dual_timeseries",
+     "plot_nan_count"
 ]
 
 # Time resolutions to downsample to
@@ -283,3 +284,87 @@ def plot_dual_timeseries_old(
 
     fig.tight_layout()
     return fig, ax1, ax2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def plot_nan_count(
+    df: pd.DataFrame,
+    *,
+    time_col: Optional[str] = "utc_timestamp",
+    use_existing_col: Optional[str] = None,
+    include_cols_for_count: Optional[Sequence[str]] = None,
+    resample: Optional[str] = None,          # e.g. "D", "W", "M"
+    start_date: Optional[pd.Timestamp | str] = None,
+    end_date: Optional[pd.Timestamp | str] = None,
+    title: Optional[str] = "NaN count per row",
+) -> Tuple[plt.Figure, plt.Axes]:
+    """
+    Plot the number of NaNs per row over time, optionally restricted to a time window.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Source frame. Must have a DatetimeIndex or a `time_col`.
+    time_col : str or None, default "utc_timestamp"
+        Name of timestamp column if the index is not already datetime.
+    use_existing_col : str or None
+        If provided, use this column as the NaN count (e.g. a precomputed 'nan_count').
+    include_cols_for_count : sequence of str or None
+        Subset of columns across which to count NaNs when computing (ignored if
+        `use_existing_col` is set). If None, use all columns.
+    resample : str or None
+        Optional pandas frequency to aggregate counts (sum) per period.
+    start_date, end_date : Timestamp | str | None
+        Optional inclusive time-span to plot. Naive datetimes are treated as UTC.
+    title : str or None
+        Plot title.
+
+    Returns
+    -------
+    (fig, ax) : matplotlib Figure and Axes
+    """
+    x = _ensure_dt_index(df, time_col)
+    s_ts, e_ts = _coerce_dates(start_date, end_date)
+
+    # Compute series
+    if use_existing_col:
+        if use_existing_col not in x.columns:
+            raise KeyError(f"Column {use_existing_col!r} not found.")
+        s = x[use_existing_col].astype("float64")
+    else:
+        cols = list(include_cols_for_count) if include_cols_for_count is not None else list(x.columns)
+        if time_col in cols:
+            cols.remove(time_col)
+        s = x[cols].isna().sum(axis=1).astype("float64")
+
+    # Slice to window (inclusive)
+    if s_ts is not None or e_ts is not None:
+        s = s.loc[s_ts:e_ts]
+
+    # Optional resample (sum across window bins)
+    if resample:
+        s = s.resample(resample).sum(min_count=1)
+
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.plot(s.index, s.values, linewidth=1.25)
+    ax.set_xlabel("Time")
+    ax.set_ylabel("NaN count")
+    if title:
+        ax.set_title(title)
+    fig.tight_layout()
+    return fig, ax
