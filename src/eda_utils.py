@@ -1,6 +1,10 @@
-###########################
-# src/eda_utils.py
-###########################
+###############################
+###############################
+##                                                          ##
+##          src/eda_utils.py                       ##
+##                                                          ##
+###############################
+###############################
 
 from __future__ import annotations
 import numpy as np
@@ -187,7 +191,7 @@ def missingness_mask(
 def count_missing_per_row(
     df: pd.DataFrame,
     time_cols: Sequence[str] = ("utc_timestamp", "cet_cest_timestamp"),
-    out_col: str = "nan_count",
+    out_col: str = "miss_count",
 ) -> pd.DataFrame:
     """
     Return a DataFrame with the original index and:
