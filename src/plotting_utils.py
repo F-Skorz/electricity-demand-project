@@ -790,6 +790,7 @@ def plot_dual_resampled_old(
 ##       bar_plot_resampled               ##
 #############################
 
+
 def bar_plot_resampled(
     df: pd.DataFrame,
     start_date: pd.Timestamp | str,
@@ -802,13 +803,14 @@ def bar_plot_resampled(
     coverage_threshold: float = 0.5,
     color: str = "tab:blue",
     title: Optional[str] = None,
+    ax: Optional[plt.Axes] = None,  # NEW: allow drawing into an existing subplot
 ) -> Tuple[plt.Figure, plt.Axes]:
     """
     Slice `df` to [start_date, end_date] (UTC), resample `column` by `granularity`
-    using `how`, apply coverage masking, and plot a single series as a bar chart.
+    using `how`, apply coverage masking, and plot as a bar chart.
 
-    Title/labels include the column, humanized granularity, how, coverage
-    threshold, and the UTC time slice. `title` overrides the default if provided.
+    If `ax` is provided, draw into that axes (no new Figure is created). Otherwise,
+    create a new Figure/Axes and return them.
     """
     func_name = "bar_plot_resampled"
 
@@ -826,7 +828,7 @@ def bar_plot_resampled(
             f"got start={start_ts!r}, end={end_ts!r}."
         )
 
-    # Build the resampled series (same as plot_resampled)
+    # Build the resampled series
     try:
         series: pd.Series = resample_with_coverage(
             df=df,
@@ -847,20 +849,24 @@ def bar_plot_resampled(
     freq_label = _pretty_freq(granularity)
     threshold_pct = int(round(coverage_threshold * 100))
 
-    # Determine a sensible bar width in Matplotlib "days" units
-    # (Matplotlib converts datetime x-values to days internally.)
+    # Determine bar width in Matplotlib "days" units
     if len(series.index) >= 2:
-        # median step between consecutive timestamps
         step = pd.Series(series.index).diff().median()
         if pd.isna(step) or step is pd.NaT:
             step = pd.Timedelta(hours=1)
     else:
-        # Fallback width if single point
         step = pd.Timedelta(hours=1)
     bar_width_days = (step / pd.Timedelta(days=1)) * 0.8  # 80% of the bin
 
-    # Plot as bars
-    fig, ax = plt.subplots()
+    # Figure/Axes management (NEW supports ax)
+    if ax is None:
+        fig, ax = plt.subplots()
+        created_fig = True
+    else:
+        fig = ax.figure
+        created_fig = False
+
+    # Bar plot
     ax.bar(series.index, series.values, width=bar_width_days, color=color, align="center", label=pretty)
 
     # Axes labels/grid
@@ -870,9 +876,9 @@ def bar_plot_resampled(
 
     # Title
     auto_title = f"{pretty} — {how} per {freq_label}"
-    ax.set_title(title if title is not None else auto_title)
+    ax.set_title(title if title is not None else auto_title, fontsize=10)
 
-    # X-axis de-crowding (same strategy as plot_resampled)
+    # X-axis de-crowding
     locator = AutoDateLocator(minticks=4, maxticks=8)
     formatter = ConciseDateFormatter(locator)
     ax.xaxis.set_major_locator(locator)
@@ -881,15 +887,19 @@ def bar_plot_resampled(
     for label in ax.get_xticklabels():
         label.set_rotation(30)
         label.set_horizontalalignment("right")
-        label.set_fontsize(9)
+        label.set_fontsize(8.5)
 
     ax.margins(x=0.01)
 
-    # Caption beneath the plot
-    caption = f"Coverage ≥ {threshold_pct}%; window: {start_ts} to {end_ts} (UTC)"
-    fig.text(0.5, 0.01, caption, ha="center", va="bottom", fontsize=9)
+    # Caption only if we created the figure (avoid clutter in grids)
+    if created_fig:
+        caption = f"Coverage ≥ {threshold_pct}%; window: {start_ts} to {end_ts} (UTC)"
+        fig.text(0.5, 0.01, caption, ha="center", va="bottom", fontsize=9)
 
-    ax.legend()
-    fig.tight_layout(rect=(0, 0.03, 1, 1))  # leave room for caption
+    ax.legend(loc="upper left", fontsize=8)
+    if created_fig:
+        fig.tight_layout(rect=(0, 0.03, 1, 1))
+    else:
+        fig.tight_layout()
+
     return fig, ax
-
