@@ -27,15 +27,14 @@ Notes on granularity and pandas defaults
 from __future__ import annotations
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.dates import AutoDateLocator, ConciseDateFormatter
 from typing import Optional, Sequence, Tuple, Literal
 from pandas.api.types import is_numeric_dtype
 
 __all__ = [
-    "coerce_dates",
-    "ensure_dt_index",
+    "coerce_dates", "ensure_dt_index",
     "resample_with_coverage",
-    "plot_resampled",
-    "plot_dual_resampled",
+    "plot_resampled", "plot_dual_resampled", "bar_plot_resampled",
 ]
 
 # Time resolutions to downsample to after normalization
@@ -458,6 +457,7 @@ def _pretty_freq(rule: str) -> str:
 #############################
 ##       plot_resampled                      ##
 #############################
+
 def plot_resampled(
     df: pd.DataFrame,
     start_date: pd.Timestamp | str,
@@ -494,7 +494,7 @@ def plot_resampled(
             f"got start={start_ts!r}, end={end_ts!r}."
         )
 
-    # Build the resampled series
+    # Build the resampled series 
     try:
         series: pd.Series = resample_with_coverage(
             df=df,
@@ -515,20 +515,37 @@ def plot_resampled(
     freq_label = _pretty_freq(granularity)
     threshold_pct = int(round(coverage_threshold * 100))
 
-    # Plot
+    # Plot 
     fig, ax = plt.subplots()
     ax.plot(series.index, series.values, label=pretty, color=color, linewidth=1.5)
 
-    # Labels: concise and uncluttered
+    # Labels 
     ax.set_xlabel("Time (UTC)")
     ax.set_ylabel(pretty)
     ax.grid(axis="y", alpha=0.3)
 
-    # Title (override if provided)
+    # Title 
     auto_title = f"{pretty} — {how} per {freq_label}"
     ax.set_title(title if title is not None else auto_title)
 
-    # Small caption beneath the plot area
+    # --- NEW: x-axis de-crowding ---
+    # 1) Smart locator/formatter with a sensible tick cap
+    locator = AutoDateLocator(minticks=4, maxticks=8)
+    formatter = ConciseDateFormatter(locator)
+    ax.xaxis.set_major_locator(locator)
+    ax.xaxis.set_major_formatter(formatter)
+
+    # 2) Light rotation + right alignment for readability
+    for label in ax.get_xticklabels():
+        label.set_rotation(0)
+        label.set_horizontalalignment("right")
+        label.set_fontsize(9)
+
+    # 3) Tiny horizontal margins to avoid edge collisions
+    ax.margins(x=0.01)
+    # --- END NEW ---
+
+    # Small caption beneath the plot area (unchanged)
     caption = f"Coverage ≥ {threshold_pct}%; window: {start_ts} to {end_ts} (UTC)"
     fig.text(0.5, 0.01, caption, ha="center", va="bottom", fontsize=9)
 
@@ -536,6 +553,10 @@ def plot_resampled(
     fig.tight_layout(rect=(0, 0.03, 1, 1))  # leave room for caption
     return fig, ax
 
+ 
+#############################
+##       plot_dual_resampled              ##
+#############################
 
 def plot_dual_resampled(
     df: pd.DataFrame,
@@ -543,8 +564,10 @@ def plot_dual_resampled(
     end_date: pd.Timestamp | str,
     column_one: str,
     column_two: str,
+    # START NEW: granularity Literal aligned with plot_resampled
     granularity_one: Literal["H", "D", "W", "M", "Y", "h", "d", "w", "m", "y", "ME", "YE"] | str,
     granularity_two: Literal["H", "D", "W", "M", "Y", "h", "d", "w", "m", "y", "ME", "YE"] | str,
+    # END NEW
     time_col: str = "utc_timestamp",
     *,
     how_one: Literal["mean", "sum", "min", "max", "median"] = "mean",
@@ -631,6 +654,20 @@ def plot_dual_resampled(
     auto_title = f"{pretty1} vs {pretty2}"
     ax_left.set_title(title if title is not None else auto_title)
 
+    # START NEW: x-axis de-crowding (shared x-axis; set on ax_left)
+    locator = AutoDateLocator(minticks=4, maxticks=8)
+    formatter = ConciseDateFormatter(locator)
+    ax_left.xaxis.set_major_locator(locator)
+    ax_left.xaxis.set_major_formatter(formatter)
+
+    for label in ax_left.get_xticklabels():
+        label.set_rotation(30)
+        label.set_horizontalalignment("right")
+        label.set_fontsize(9)
+
+    ax_left.margins(x=0.01)
+    # END NEW
+
     caption = f"Window: {start_ts} to {end_ts} (UTC)"
     fig.text(0.5, 0.01, caption, ha="center", va="bottom", fontsize=9)
 
@@ -640,3 +677,219 @@ def plot_dual_resampled(
 
     fig.tight_layout(rect=(0, 0.03, 1, 1))
     return fig, (ax_left, ax_right)
+
+
+
+def plot_dual_resampled_old(
+    df: pd.DataFrame,
+    start_date: pd.Timestamp | str,
+    end_date: pd.Timestamp | str,
+    column_one: str,
+    column_two: str,
+    granularity_one: Literal["H", "D", "W", "M", "Y", "h", "d", "w", "m", "y", "ME", "YE"] | str,
+    granularity_two: Literal["H", "D", "W", "M", "Y", "h", "d", "w", "m", "y", "ME", "YE"] | str,
+    time_col: str = "utc_timestamp",
+    *,
+    how_one: Literal["mean", "sum", "min", "max", "median"] = "mean",
+    how_two: Literal["mean", "sum", "min", "max", "median"] = "mean",
+    coverage_threshold_one: float = 0.5,
+    coverage_threshold_two: float = 0.5,
+    color_one: str = "tab:blue",
+    color_two: str = "tab:red",
+    title: Optional[str] = None,
+) -> Tuple[plt.Figure, Tuple[plt.Axes, plt.Axes]]:
+    """
+    Slice `df` to [start_date, end_date] (UTC), resample two columns independently
+    (each with its own granularity/how/coverage), and plot them on a shared x-axis
+    with two y-axes (left/right). `title` overrides the default if provided.
+    """
+    func_name = "plot_dual_resampled"
+
+    # Coerce once for display + downstream calls
+    try:
+        start_ts, end_ts = coerce_dates(start_date, end_date)
+    except Exception as e:
+        raise ValueError(
+            f"The function {func_name} failed to coerce the time window: {e}"
+        ) from e
+
+    if start_ts is None or end_ts is None:
+        raise ValueError(
+            f"The function {func_name} requires both start_date and end_date; "
+            f"got start={start_ts!r}, end={end_ts!r}."
+        )
+
+    # Build both resampled series
+    try:
+        s1: pd.Series = resample_with_coverage(
+            df=df,
+            start_date=start_ts,
+            end_date=end_ts,
+            column=column_one,
+            granularity=granularity_one,
+            time_col=time_col,
+            how=how_one,
+            coverage_threshold=coverage_threshold_one,
+        )
+    except Exception as e:
+        raise ValueError(
+            f"The function {func_name} could not resample column_one {column_one!r}: {e}"
+        ) from e
+
+    try:
+        s2: pd.Series = resample_with_coverage(
+            df=df,
+            start_date=start_ts,
+            end_date=end_ts,
+            column=column_two,
+            granularity=granularity_two,
+            time_col=time_col,
+            how=how_two,
+            coverage_threshold=coverage_threshold_two,
+        )
+    except Exception as e:
+        raise ValueError(
+            f"The function {func_name} could not resample column_two {column_two!r}: {e}"
+        ) from e
+
+    pretty1 = _pretty_col(column_one)
+    pretty2 = _pretty_col(column_two)
+    freq1 = _pretty_freq(granularity_one)
+    freq2 = _pretty_freq(granularity_two)
+    th1 = int(round(coverage_threshold_one * 100))
+    th2 = int(round(coverage_threshold_two * 100))
+
+    # Plot
+
+    fig, ax_left = plt.subplots()
+    ax_right = ax_left.twinx()
+
+    line1, = ax_left.plot(s1.index, s1.values, color=color_one, linewidth=1.5, label=pretty1)
+    line2, = ax_right.plot(s2.index, s2.values, color=color_two, linewidth=1.5, label=pretty2)
+
+    ax_left.set_xlabel("Time (UTC)")
+    ax_left.set_ylabel(f"{pretty1}  ({how_one} @ {freq1}, ≥{th1}% cov)")
+    ax_right.set_ylabel(f"{pretty2} ({how_two} @ {freq2}, ≥{th2}% cov)")
+    ax_left.grid(axis="y", alpha=0.3)
+
+    auto_title = f"{pretty1} vs {pretty2}"
+    ax_left.set_title(title if title is not None else auto_title)
+
+    caption = f"Window: {start_ts} to {end_ts} (UTC)"
+    fig.text(0.5, 0.01, caption, ha="center", va="bottom", fontsize=9)
+
+    handles = [line1, line2]
+    labels = [pretty1, pretty2]
+    ax_left.legend(handles, labels, loc="upper left")
+
+    fig.tight_layout(rect=(0, 0.03, 1, 1))
+    return fig, (ax_left, ax_right)
+
+
+#############################
+##       bar_plot_resampled               ##
+#############################
+
+def bar_plot_resampled(
+    df: pd.DataFrame,
+    start_date: pd.Timestamp | str,
+    end_date: pd.Timestamp | str,
+    column: str,
+    granularity: Literal["H", "D", "W", "M", "Y", "h", "d", "w", "m", "y", "ME", "YE"] | str,
+    time_col: str = "utc_timestamp",
+    *,
+    how: Literal["mean", "sum", "min", "max", "median"] = "mean",
+    coverage_threshold: float = 0.5,
+    color: str = "tab:blue",
+    title: Optional[str] = None,
+) -> Tuple[plt.Figure, plt.Axes]:
+    """
+    Slice `df` to [start_date, end_date] (UTC), resample `column` by `granularity`
+    using `how`, apply coverage masking, and plot a single series as a bar chart.
+
+    Title/labels include the column, humanized granularity, how, coverage
+    threshold, and the UTC time slice. `title` overrides the default if provided.
+    """
+    func_name = "bar_plot_resampled"
+
+    # Coerce once for display + downstream calls
+    try:
+        start_ts, end_ts = coerce_dates(start_date, end_date)
+    except Exception as e:
+        raise ValueError(
+            f"The function {func_name} failed to coerce the time window: {e}"
+        ) from e
+
+    if start_ts is None or end_ts is None:
+        raise ValueError(
+            f"The function {func_name} requires both start_date and end_date; "
+            f"got start={start_ts!r}, end={end_ts!r}."
+        )
+
+    # Build the resampled series (same as plot_resampled)
+    try:
+        series: pd.Series = resample_with_coverage(
+            df=df,
+            start_date=start_ts,
+            end_date=end_ts,
+            column=column,
+            granularity=granularity,
+            time_col=time_col,
+            how=how,
+            coverage_threshold=coverage_threshold,
+        )
+    except Exception as e:
+        raise ValueError(
+            f"The function {func_name} could not produce a resampled series: {e}"
+        ) from e
+
+    pretty = _pretty_col(column)
+    freq_label = _pretty_freq(granularity)
+    threshold_pct = int(round(coverage_threshold * 100))
+
+    # Determine a sensible bar width in Matplotlib "days" units
+    # (Matplotlib converts datetime x-values to days internally.)
+    if len(series.index) >= 2:
+        # median step between consecutive timestamps
+        step = pd.Series(series.index).diff().median()
+        if pd.isna(step) or step is pd.NaT:
+            step = pd.Timedelta(hours=1)
+    else:
+        # Fallback width if single point
+        step = pd.Timedelta(hours=1)
+    bar_width_days = (step / pd.Timedelta(days=1)) * 0.8  # 80% of the bin
+
+    # Plot as bars
+    fig, ax = plt.subplots()
+    ax.bar(series.index, series.values, width=bar_width_days, color=color, align="center", label=pretty)
+
+    # Axes labels/grid
+    ax.set_xlabel("Time (UTC)")
+    ax.set_ylabel(pretty)
+    ax.grid(axis="y", alpha=0.3)
+
+    # Title
+    auto_title = f"{pretty} — {how} per {freq_label}"
+    ax.set_title(title if title is not None else auto_title)
+
+    # X-axis de-crowding (same strategy as plot_resampled)
+    locator = AutoDateLocator(minticks=4, maxticks=8)
+    formatter = ConciseDateFormatter(locator)
+    ax.xaxis.set_major_locator(locator)
+    ax.xaxis.set_major_formatter(formatter)
+
+    for label in ax.get_xticklabels():
+        label.set_rotation(30)
+        label.set_horizontalalignment("right")
+        label.set_fontsize(9)
+
+    ax.margins(x=0.01)
+
+    # Caption beneath the plot
+    caption = f"Coverage ≥ {threshold_pct}%; window: {start_ts} to {end_ts} (UTC)"
+    fig.text(0.5, 0.01, caption, ha="center", va="bottom", fontsize=9)
+
+    ax.legend()
+    fig.tight_layout(rect=(0, 0.03, 1, 1))  # leave room for caption
+    return fig, ax
+
