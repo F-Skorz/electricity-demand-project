@@ -14,16 +14,22 @@ electricity-demand-project/
 │   ├── processed/                                 #  OPSD data set and German holiday data as parquet
 │   └── external/                                    # Optional external sources (e.g., UBA, weather APIs)
 │
+├── docs/
+│   ├── data_dictionary.md                   # Abbreviations etc...
+│
 ├── notebooks/
 │   ├── 00_ElectricityDemand_DomainResearch.ipynb    # Contains fundamental domain knowledge
 │   ├── 01_OPSD_EDA.ipynb                                           # First look at the OPSD data set
-│   └── 02_HolidaysAndSchoolFreeDays.ipynb               # Relevant German holiday data
+│   ├── 02_HolidaysAndSchoolFreeDays.ipynb               # Relevant German holiday data
+│   └── 03_Weather_historic.ipynb                                   # German weather data
 │   
 │
 ├── src/
 │   ├── config.py
+│   ├── de_hol_df.py
+│   ├── dwd_utils.py                                  # download helper and DataFrame builders
+│   ├── eda_utils.py                                   # missingness summaries
 │   ├── load_data.py
-│   ├── eda_utils.py
 │   ├── plotting_utils.py
 │   └── data_modules/
 │       └── german_school_semesters.py

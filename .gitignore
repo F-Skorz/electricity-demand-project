@@ -37,15 +37,23 @@ data/raw/*
 
 data/processed/*
 !data/processed/.gitkeep
-!data/processed/DE_hol_df.parquet
-!data/processed/OPSD_60min_de_lu_df.parquet
-# Whitelist dummies:
-# !data/processed/curated/
-# !data/processed/curated/**
-# !data/processed/small_example.csv
 
-# (Optional) common large/binary formats (CSV stays allowed)
 *.parquet
+# Except, on occasion
+#!data/processed/DE_hol_df.parquet
+#!data/processed/OPSD_60min_de_lu_df.parquet
+
+
+# --------------------------------
+# Documentation: always tracked
+# --------------------------------
+!docs/
+
+
+
+
+common large/binary formats (CSV stays allowed)
+
 *.feather
 *.h5
 *.zip
