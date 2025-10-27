@@ -1,4 +1,35 @@
 <h1> Data Dictionary </h1>
+<h2>  Comprehensive Abbreviations Dictionary </h2>
+
+| Abbreviation  | Un-abbreviated Form | Explanation |
+| --------------|---------------------------|---------------------|
+| `BW`| Baden-Württemberg |  |
+| `BY`| Bavaria (Bayern) |  |
+| `BE` |  Berlin |      |
+| `BB` |     Brandenburg |  | 
+| DWD | Deutscher Wetterdienst | Germany’s national meteorological service |
+|  `CET` | Central European Time | The standard time zone used in most of Central Europe (UTC + 1) | 
+| `CEST` | Central European Summer Time | The daylight-saving version of Central European Time (UTC + 2) |
+|`HB`| Hansestadt Bremen |  |
+|`HH`|  Hansestadt Hamburg|  |
+|`HE`| Hesse (Hessen) |   |
+| `MV` | Mecklenburg-Vorpommern |  |
+|`NI`| Lower Saxony (Niedersachsen)       |  |
+|`NW`|  North Rhine-Westphalia (Nordrhein-Westfalen) | Biggest federal State of Germany, population-wise |
+| OPSD | Open Power System Data | A project providing open, high-quality data for electricity system analysis |
+| QN_x | Qualitätsniveau |  DWD quality codes — numeric flags (x = dataset number) indicating the data quality or processing level (Qualitätsniveau = quality level) |
+| QN_8 | Qualitätsniveau |  DWD quality code with respect to precipitation data |
+| QN_9 | Qualitätsniveau |  DWD quality code with respect to temperature and humidity data |
+|`RP`| Rhineland-Palatinate (Rheinland-Pfalz)|  | 
+| `RH` | Relative Humidity | The percentage of water vapor in the air compared to the maximum it could hold at that temperature |
+|`SL` | Saarland | Smallest non-city state  and unit of measurement |
+| TSO | Transmission System Operator |  Companies that run the high-voltage electricity grid. | 
+| `SN`| Saxony (Sachsen) | | 
+|`ST`| Saxony-Anhalt (Sachsen-Anhalt) |   |
+|`SH`| Schleswig-Holstein |   |
+|`TH`| Thuringia (Thüringen) |   |
+| `UTC` | Coordinated Universal Time | The global standard time reference that does not change with time zones or daylight saving | 
+
 
 <h2>  Abbreviations</h2>
 
