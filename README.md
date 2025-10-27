@@ -49,12 +49,28 @@ electricity-demand-project/
 - `OPSD_60min_de_lu_df`: Subframe of Germany and Luxembourg related Columns
 - `DE_hol_df`: national holiday/school-free calendar (daily)
 
+---
+
+##  Data Source and Usage Terms
+
+### Open Power System Data (OPSD)
+
+This project uses electricity demand and generation data from **Open Power System Data (OPSD)**, a public data platform curated by the OPSD project team.
+The data are accessible at [https://open-power-system-data.org/](https://open-power-system-data.org/).
+
+All OPSD datasets are released under the [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/) license. Users who download or process this data through the routines included in this repository are **responsible for complying with that license**, including **attributing Open Power System Data (OPSD)** as the original data provider.
+
+### Deutscher Wetterdienst (DWD)
+
+This project uses publicly available meteorological data provided by the **Deutscher Wetterdienst (DWD)** — Germany’s national meteorological service — through its [Open Data Portal](https://opendata.dwd.de/climate_environment/CDC/).
+
+All DWD data are subject to the [official DWD Open Data terms of use](https://www.dwd.de/EN/service/copyright/copyright_artikel.html). Users who download or process this data through the routines included in this repository are **responsible for ensuring compliance with those terms**.
 
 
 ## 🪶 License
 
 This project is for **educational and non-commercial use**.  
-All data sources remain under their respective open licenses (OPSD, DWD).
+As already stated above, all data sources remain under their respective open licenses (OPSD, DWD).
 
 ---
 

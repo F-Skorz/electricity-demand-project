@@ -24,17 +24,19 @@ Notes on granularity and pandas defaults
   label='left', closed='left'.
 """
 
+
 from __future__ import annotations
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.dates import AutoDateLocator, ConciseDateFormatter
 from typing import Optional, Sequence, Tuple, Literal
 from pandas.api.types import is_numeric_dtype
 
 __all__ = [
-    "coerce_dates", "ensure_dt_index",
-    "resample_with_coverage",
+    "coerce_dates", "ensure_dt_index", "resample_with_coverage",
     "plot_resampled", "plot_dual_resampled", "bar_plot_resampled",
+    "fig_to_rgb_array"
 ]
 
 # Time resolutions to downsample to after normalization
@@ -903,3 +905,16 @@ def bar_plot_resampled(
         fig.tight_layout()
 
     return fig, ax
+
+
+def fig_to_rgb_array(fig):
+    """Render a Matplotlib Figure to an (H,W,3) uint8 array, backend-agnostic."""
+    fig.canvas.draw()
+    w, h = fig.canvas.get_width_height()
+    # Prefer RGBA buffer (newer backends); fall back to tostring_rgb if available
+    if hasattr(fig.canvas, "buffer_rgba"):
+        buf = np.frombuffer(fig.canvas.buffer_rgba(), dtype=np.uint8).reshape(h, w, 4)[..., :3]
+    else:
+        # Older backends
+        buf = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8).reshape(h, w, 3)
+    return buf

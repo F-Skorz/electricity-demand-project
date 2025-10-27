@@ -22,6 +22,8 @@ notebooks/*
 !notebooks/01_OPSD_EDA.ipynb
 # Whitelist 02_HolidaysAndSchoolFreeDays.ipynb:
 !notebooks/02_HolidaysAndSchoolFreeDays.ipynb
+# Whitelist 03_Weather_historic.ipynb:
+!notebooks/03_Weather_historic.ipynb
 
 # ---------------------------------------
 # Data: ignore raw/processed by default
