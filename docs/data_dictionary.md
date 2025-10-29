@@ -3,23 +3,27 @@
 
 | Abbreviation  | Un-abbreviated Form | Explanation |
 | --------------|---------------------------|---------------------|
+| `AMP` | Amprion GmbH, `amprion` | One of Germany's four **TSO**s |
 | `BW`| Baden-Württemberg |  |
 | `BY`| Bavaria (Bayern) |  |
-| `BE` |  Berlin |      |
+| `BE` |  Berlin | The capital of Germany and a federal (city) state, part of **50Hertz**' control area  |
 | `BB` |     Brandenburg |  | 
+| `CEST` | Central European Summer Time | The daylight-saving version of Central European Time (**UTC + 2**) |
+|  `CET` | Central European Time | The standard time zone used in most of Central Europe (**UTC + 1**) | 
+| ENTSO-E | European Network of Transmission System Operators for Electricity |  The association of Europe’s electricity transmission system operators (**TSO**s). |
+| DST  | Daylight Saving Time | The practice of advancing clocks during warmer months to extend evening daylight |
+| `DE` | Germany |    |
 | DWD | Deutscher Wetterdienst | Germany’s national meteorological service |
-|  `CET` | Central European Time | The standard time zone used in most of Central Europe (UTC + 1) | 
-| `CEST` | Central European Summer Time | The daylight-saving version of Central European Time (UTC + 2) |
-|`HB`| Hansestadt Bremen |  |
+|`HB`| Hansestadt Bremen |  The smallest of Germany's three city states |
 |`HH`|  Hansestadt Hamburg|  |
 |`HE`| Hesse (Hessen) |   |
 | `MV` | Mecklenburg-Vorpommern |  |
 |`NI`| Lower Saxony (Niedersachsen)       |  |
 |`NW`|  North Rhine-Westphalia (Nordrhein-Westfalen) | Biggest federal State of Germany, population-wise |
 | OPSD | Open Power System Data | A project providing open, high-quality data for electricity system analysis |
-| QN_x | Qualitätsniveau |  DWD quality codes — numeric flags (x = dataset number) indicating the data quality or processing level (Qualitätsniveau = quality level) |
-| QN_8 | Qualitätsniveau |  DWD quality code with respect to precipitation data |
-| QN_9 | Qualitätsniveau |  DWD quality code with respect to temperature and humidity data |
+| QN_x | Qualitätsniveau |  **DWD** quality codes — numeric flags (x = dataset number) indicating the data quality or processing level (Qualitätsniveau = quality level) |
+| QN_8 | Qualitätsniveau |  **DWD** quality code with respect to precipitation data |
+| QN_9 | Qualitätsniveau |  **DWD** quality code with respect to temperature and humidity data |
 |`RP`| Rhineland-Palatinate (Rheinland-Pfalz)|  | 
 | `RH` | Relative Humidity | The percentage of water vapor in the air compared to the maximum it could hold at that temperature |
 |`SL` | Saarland | Smallest non-city state  and unit of measurement |
@@ -29,9 +33,9 @@
 |`SH`| Schleswig-Holstein |   |
 |`TH`| Thuringia (Thüringen) |   |
 | `UTC` | Coordinated Universal Time | The global standard time reference that does not change with time zones or daylight saving | 
+|`50H` | 50Hertz Transmission GmbH | One of Germany's four **TSO**s,  responsible for the high power network in eastern Germany as well as the area around Hamburg
 
-
-<h2>  Abbreviations</h2>
+<h2>  Abbreviations for Germany's Federal States</h2>
 
 We use the following abbreviations for the German federal states.
 
@@ -74,3 +78,18 @@ We retrieve weather data for the following German cities.
 | Dresden | `DE_SN_50H_2` | Saxony (Sachsen)	| 51.0504 |	13.7373 |	50Hertz| 
 |	Kiesl | `DE_SH_TEN_1`	|	Schleswig-Holstein	| 54.3233	| 10.1228	| TenneT |
 
+and, there, from these **DWD** weather stations
+
+| City       | Station ID | Station Name             | 
+|------------|------------|--------------------------|
+| Berlin     | 00403      | Berlin-Dahlem (FU)       | 
+| Hamburg    | 01975      | Hamburg-Fuhlsbüttel      |
+| Frankfurt  | 01420      | Frankfurt/Main           |  
+| Cologne    | 02667      | Köln/Bonn                | 
+| Augsburg   | 00232      | Augsburg                 | 
+| Munich     | 03379      | München-Stadt            | 
+| Stuttgart  | 04928      | Stuttgart (Schnarrenberg)|             
+| Freiburg   | 01443      | Freiburg                 | 
+| Leipzig    | 02932      | Leipzig/Halle            | 
+| Kiel       | 02564      | Kiel-Holtenau            | 
+| Dresden    | 01048      | Dresden-Klotzsche        | 
