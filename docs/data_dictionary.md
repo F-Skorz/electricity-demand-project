@@ -4,7 +4,7 @@
 | Abbreviation  | Un-abbreviated Form | Explanation |
 | --------------|---------------------------|---------------------|
 | `AMP` | Amprion GmbH, `amprion` | One of Germany's four **TSO**s |
-| `BW`| Baden-Württemberg |  |
+| `BW`| Baden-Württemberg |  Germany's third state in terms of population, the only one with a **TSO** of its own |
 | `BY`| Bavaria (Bayern) |  |
 | `BE` |  Berlin | The capital of Germany and a federal (city) state, part of **50Hertz**' control area  |
 | `BB` |     Brandenburg |  | 

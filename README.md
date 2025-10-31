@@ -29,6 +29,7 @@ electricity-demand-project/
 │   ├── de_hol_df.py
 │   ├── dwd_utils.py                                  # download helper and DataFrame builders
 │   ├── eda_utils.py                                   # missingness summaries
+│   ├── filter_group_agg.py                       # filter, group, aggregate
 │   ├── load_data.py
 │   ├── plotting_utils.py
 │   └── data_modules/
@@ -43,9 +44,10 @@ electricity-demand-project/
 
 ## Data Sources
 
-- **Electricity load**: [Open Power System Data – Time Series 60min](https://data.open-power-system-data.org/time_series/)
-- **Weather data**: Deutscher Wetterdienst (DWD) historical hourly data picked from a set of different weather stations
-- **Holiday data**: Manually structured German school holiday dictionaries
+- **Electricity load**: [Open Power System Data – Time Series 60min](https://data.open-power-system-data.org/time_series/)  
+- **Holiday data**: Manually structured German school holiday dictionaries  
+ - **Weather data**: Deutscher Wetterdienst (DWD) historical hourly data picked from eleven weather stations  
+
 
 ---
 
@@ -54,6 +56,7 @@ electricity-demand-project/
 - `OPSD_60min_df`: full OPSD time series
 - `OPSD_60min_de_lu_df`: Subframe of Germany and Luxembourg related Columns
 - `DE_hol_df`: national holiday/school-free calendar (daily)
+- `DE_DWD_hist_df`: historical weather data from 
 
 ---
 
