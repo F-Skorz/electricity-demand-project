@@ -24,6 +24,10 @@ notebooks/*
 !notebooks/02_HolidaysAndSchoolFreeDays.ipynb
 # Whitelist 03_Weather_historic.ipynb:
 !notebooks/03_Weather_historic.ipynb
+# Whitelist 04_EngineerHolidaynessFeature.ipynb:
+!notebooks/04_EngineerHolidaynessFeature.ipynb
+
+
 
 # ---------------------------------------
 # Data: ignore raw/processed by default

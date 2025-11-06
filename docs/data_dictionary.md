@@ -4,7 +4,7 @@
 | Abbreviation  | Un-abbreviated Form | Explanation |
 | --------------|---------------------------|---------------------|
 | `AMP` | Amprion GmbH, `amprion` | One of Germany's four **TSO**s |
-| `BW`| Baden-Württemberg |  Germany's third state in terms of population, the only one with a **TSO** of its own |
+| `BW`| Baden-Württemberg |  Germany's third state in terms of population, the only one with a **TSO** of its own: TransnetBW |
 | `BY`| Bavaria (Bayern) |  |
 | `BE` |  Berlin | The capital of Germany and a federal (city) state, part of **50Hertz**' control area  |
 | `BB` |     Brandenburg |  | 
@@ -13,7 +13,7 @@
 | ENTSO-E | European Network of Transmission System Operators for Electricity |  The association of Europe’s electricity transmission system operators (**TSO**s). |
 | DST  | Daylight Saving Time | The practice of advancing clocks during warmer months to extend evening daylight |
 | `DE` | Germany |    |
-| DWD | Deutscher Wetterdienst | Germany’s national meteorological service |
+| **DWD** | Deutscher Wetterdienst | Germany’s national meteorological service |
 |`HB`| Hansestadt Bremen |  The smallest of Germany's three city states |
 |`HH`|  Hansestadt Hamburg|  |
 |`HE`| Hesse (Hessen) |   |
@@ -27,11 +27,13 @@
 |`RP`| Rhineland-Palatinate (Rheinland-Pfalz)|  | 
 | `RH` | Relative Humidity | The percentage of water vapor in the air compared to the maximum it could hold at that temperature |
 |`SL` | Saarland | Smallest non-city state  and unit of measurement |
-| TSO | Transmission System Operator |  Companies that run the high-voltage electricity grid. | 
+| TSO | Transmission System Operator |  Companies that run the high-voltage electricity grid | 
 | `SN`| Saxony (Sachsen) | | 
 |`ST`| Saxony-Anhalt (Sachsen-Anhalt) |   |
 |`SH`| Schleswig-Holstein |   |
+|`TEN`| Tennet TSO GmbH   |  One of Germany's four **TSO**s  |
 |`TH`| Thuringia (Thüringen) |   |
+|`TNB`|  TransnetBW  GmbH, `transnetbw` |  One of Germany's four **TSO**s, TransnetBW GmbH operates the electricity transmission system in Baden-Württemberg |
 | `UTC` | Coordinated Universal Time | The global standard time reference that does not change with time zones or daylight saving | 
 |`50H` | 50Hertz Transmission GmbH | One of Germany's four **TSO**s,  responsible for the high power network in eastern Germany as well as the area around Hamburg
 
