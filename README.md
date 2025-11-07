@@ -15,13 +15,14 @@ electricity-demand-project/
 │   └── external/                                    # Optional external sources (e.g., UBA, weather APIs)
 │
 ├── docs/
-│   ├── data_dictionary.md                   # Abbreviations etc...
+│   └── data_dictionary.md                                             # Abbreviations etc...
 │
 ├── notebooks/
 │   ├── 00_ElectricityDemand_DomainResearch.ipynb    # Contains fundamental domain knowledge
 │   ├── 01_OPSD_EDA.ipynb                                           # First look at the OPSD data set
 │   ├── 02_HolidaysAndSchoolFreeDays.ipynb               # Relevant German holiday data
-│   └── 03_Weather_historic.ipynb                                   # German weather data
+│   ├── 03_Weather_historic.ipynb                                  # German weather data
+│   └── 04_EngineerHolidaynessFeature.ipynb                # Holidayness as predictive                   
 │   
 │
 ├── src/

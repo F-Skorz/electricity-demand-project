@@ -15,10 +15,9 @@ from pandas.api.types import (
     is_timedelta64_dtype,
     is_extension_array_dtype,
 )
-from typing import Sequence, Tuple, List
+from typing import Sequence, Tuple, List, Iterable
 from typing import Callable, Iterable, Optional, Dict, Any
 import numpy as np
-
 
 
 
@@ -26,22 +25,66 @@ import numpy as np
 ##      filter weekdays                        ##
 ############################# 
 
+
 def make_weekday_mask(
     df: pd.DataFrame,
     ts_col: str,
     weekdays: Iterable[int] = (0, 1, 2, 3, 4),
+    *,
+    treat_as_hour_end: bool = True,
+    epsilon: pd.Timedelta | str = "1ns",
 ) -> pd.Series:
     """
-    Build a boolean mask selecting rows whose  weekday - as defined by  `ts_col` - is in `weekdays`.
+    Build a boolean mask selecting rows whose weekday—as defined by `ts_col`—is in `weekdays`.
     Weekday encoding: Monday=0, ..., Sunday=6.
+
+    Hour-ending convention
+    ----------------------
+    If your timestamps label the *end* of the hour (OPSD/ENTSO-E style), set
+    `treat_as_hour_end=True` (default). This computes the weekday at `t - epsilon`
+    (inside the hour [t-1h, t)) so an hour ending at local midnight counts toward
+    the *preceding* local day. `epsilon` defaults to 1ns to avoid DST pitfalls.
+
+    Assumptions
+    -----------
+    - `ts_col` is a datetime-like Series (tz-aware or naive). Use the calendar you care about:
+      e.g., pass a local-time column like `cet_cest_timestamp` if you want German weekdays.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+    ts_col : str
+        Name of the timestamp column to inspect.
+    weekdays : Iterable[int], default (0..4)
+        Allowed weekdays (Mon=0 .. Sun=6).
+    treat_as_hour_end : bool, default True
+        If True, use `timestamp - epsilon` before computing weekday.
+    epsilon : pd.Timedelta | str, default "1ns"
+        Tiny offset applied when `treat_as_hour_end=True`.
+
+    Returns
+    -------
+    pd.Series (bool)
+        True where the row's (adjusted) weekday is in `weekdays`. NaT -> False.
+
+    Raises
+    ------
+    KeyError, TypeError
     """
     if ts_col not in df.columns:
-        raise KeyError(f"The function make_weekday_mask could not find column '{ts_col}' in DataFrame '{df}'.")
+        raise KeyError(f"make_weekday_mask: column '{ts_col}' not found.")
     if not pd.api.types.is_datetime64_any_dtype(df[ts_col]):
-        raise TypeError(f"The function make_weekday_mask does not recognize  '{ts_col}' as datetime-like.")
+        raise TypeError(f"make_weekday_mask: '{ts_col}' is not datetime-like.")
 
+    ts = df[ts_col]
+    if treat_as_hour_end:
+        eps = pd.Timedelta(epsilon)
+        ts = ts - eps  # step just inside the hour ([t-1h, t))
+
+    wk = ts.dt.weekday  # Monday=0 .. Sunday=6
     wset = set(weekdays)
-    return df[ts_col].dt.weekday.isin(wset).fillna(False)
+    return wk.isin(wset).fillna(False)
+
 
 
 
