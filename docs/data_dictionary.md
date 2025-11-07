@@ -4,7 +4,7 @@
 | Abbreviation  | Un-abbreviated Form | Explanation |
 | --------------|---------------------------|---------------------|
 | `AMP` | Amprion GmbH, `amprion` | One of Germany's four **TSO**s |
-| `BW`| Baden-Württemberg |  Germany's third state in terms of population, the only one with a **TSO** of its own: TransnetBW |
+| `BW`| Baden-Württemberg |  Germany's third state in terms of population, the only one with a **TSO** of its own: **TransnetBW** |
 | `BY`| Bavaria (Bayern) |  |
 | `BE` |  Berlin | The capital of Germany and a federal (city) state, part of **50Hertz**' control area  |
 | `BB` |     Brandenburg |  | 
@@ -33,7 +33,7 @@
 |`SH`| Schleswig-Holstein |   |
 |`TEN`| Tennet TSO GmbH   |  One of Germany's four **TSO**s  |
 |`TH`| Thuringia (Thüringen) |   |
-|`TNB`|  TransnetBW  GmbH, `transnetbw` |  One of Germany's four **TSO**s, TransnetBW GmbH operates the electricity transmission system in Baden-Württemberg |
+|`TNB`|  **TransnetBW  GmbH**, `transnetbw` |  One of Germany's four **TSO**s, **TransnetBW GmbH** operates the electricity transmission system in Baden-Württemberg |
 | `UTC` | Coordinated Universal Time | The global standard time reference that does not change with time zones or daylight saving | 
 |`50H` | 50Hertz Transmission GmbH | One of Germany's four **TSO**s,  responsible for the high power network in eastern Germany as well as the area around Hamburg
 
