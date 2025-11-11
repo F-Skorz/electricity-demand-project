@@ -14,10 +14,14 @@ import pandas as pd
 
 
 
+import numpy as np
+import pandas as pd
+
+
 def add_innerness_and_outerness(df: pd.DataFrame, flag_col: str) -> pd.DataFrame:
     """
-    Return a copy of `df` with two new columns quantifying the 'innerness' and
-    'outerness' of flagged sequences in `flag_col`.
+    Return a copy of `df` with four new numeric columns quantifying the
+    'innerness' and 'outerness' of flagged sequences in `flag_col`.
 
     The function treats entries outside the DataFrame as the *opposite* flag value,
     ensuring that contiguous blocks at the boundaries are properly closed.
@@ -32,10 +36,11 @@ def add_innerness_and_outerness(df: pd.DataFrame, flag_col: str) -> pd.DataFrame
     Returns
     -------
     pd.DataFrame
-        Copy of the input DataFrame with two new tuple-valued columns:
-        - `<flag_col>_innerness`: (k, l) distances inside 1-blocks
-        - `<flag_col>_outerness`: (k, l) distances inside 0-blocks
-          (both follow the same virtual-boundary rule)
+        Copy of the input DataFrame with four new numeric columns:
+        - `<flag_col>_backw_innerness`: distance since last 0 (inside 1-blocks)
+        - `<flag_col>_forw_innerness`: distance until next 0 (inside 1-blocks)
+        - `<flag_col>_backw_outerness`: distance since last 1 (inside 0-blocks)
+        - `<flag_col>_forw_outerness`: distance until next 1 (inside 0-blocks)
     """
     if flag_col not in df.columns:
         raise KeyError(f"Column '{flag_col}' not found in DataFrame.")
@@ -59,21 +64,23 @@ def add_innerness_and_outerness(df: pd.DataFrame, flag_col: str) -> pd.DataFrame
         next_opposite = np.where(np.isnan(next_opposite), n, next_opposite)
 
         # Compute distances to last and next opposite values
-        k = idx - prev_opposite
-        l = next_opposite - idx
+        k = idx - prev_opposite     # backward distance
+        l = next_opposite - idx     # forward distance
 
         # Zero distances outside target blocks
-        pairs = np.stack([k, l], axis=1)
-        pairs[flags != target_value] = (0, 0)
-        return pairs.astype(int)
+        k[flags != target_value] = 0
+        l[flags != target_value] = 0
+        return np.stack([k, l], axis=1).astype(int)
 
-    # Compute both
+    # --- Compute both inner and outer arrays ---
     inner_pairs = compute_innerness_for_value(1)
     outer_pairs = compute_innerness_for_value(0)
 
-    # Return a copy with two new tuple-valued columns
+    # --- Build output DataFrame copy ---
     df_copy = df.copy()
-    df_copy[f"{flag_col}_innerness"] = list(map(tuple, inner_pairs))
-    df_copy[f"{flag_col}_outerness"] = list(map(tuple, outer_pairs))
+    df_copy[f"{flag_col}_backw_innerness"] = inner_pairs[:, 0]
+    df_copy[f"{flag_col}_forw_innerness"] = inner_pairs[:, 1]
+    df_copy[f"{flag_col}_backw_outerness"] = outer_pairs[:, 0]
+    df_copy[f"{flag_col}_forw_outerness"] = outer_pairs[:, 1]
 
     return df_copy

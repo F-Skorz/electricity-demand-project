@@ -36,7 +36,7 @@ from pandas.api.types import is_numeric_dtype
 __all__ = [
     "coerce_dates", "ensure_dt_index", "resample_with_coverage",
     "plot_resampled", "plot_dual_resampled", "bar_plot_resampled",
-    "fig_to_rgb_array"
+    "fig_to_rgb_array", "plot_weekday_set", "plot_mask_over_time"
 ]
 
 # Time resolutions to downsample to after normalization
@@ -918,3 +918,52 @@ def fig_to_rgb_array(fig):
         # Older backends
         buf = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8).reshape(h, w, 3)
     return buf
+
+
+#############################
+##       plot_weekday_set                  ##
+#############################
+
+
+def plot_weekday_set(ax, profiles, title, ylabel=None, xlabel=False):
+    # profiles: list of (label, df_with_columns_hour_value)
+    for label, prof in profiles:
+        ax.plot(prof["hour"], prof["value"], label=label)
+    if xlabel:
+        ax.set_xlabel("Hour of day (0–23)")
+    if ylabel:
+        ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    ax.grid(True, alpha=0.3)
+    ax.legend(ncols=2, fontsize=8)
+
+#############################
+##       plot_mask_over_time              ##
+#############################
+
+def plot_mask_over_time(df, mask, start_date, end_date, ts_col="utc_timestamp"):
+    """
+    Plot a simple 0/1 bar series of a boolean mask over time between start and end dates.
+    """
+    # Convert boundaries to tz-aware UTC timestamps
+    start = pd.to_datetime(start_date).tz_localize("UTC")
+    end   = pd.to_datetime(end_date).tz_localize("UTC")
+
+    # Slice by date range
+    time = df.loc[(df[ts_col] >= start) & (df[ts_col] <= end), ts_col]
+    mask_in_range = mask.loc[time.index] if isinstance(mask, pd.Series) else mask[(df[ts_col] >= start) & (df[ts_col] <= end)]
+
+    # Convert mask to numeric (0/1)
+    y = mask_in_range.astype(int)
+
+    # Plot
+    plt.figure(figsize=(12, 3))
+    plt.bar(time, y, width=0.03, color="steelblue")
+    plt.ylim(-0.1, 1.1)
+    plt.title(f"Mask activity from {start_date} to {end_date}")
+    plt.xlabel("Time")
+    plt.ylabel("Mask (0/1)")
+    plt.grid(axis="y", alpha=0.3)
+    plt.tight_layout()
+    plt.show()
+
