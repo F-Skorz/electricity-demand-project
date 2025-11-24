@@ -101,19 +101,24 @@ def _coerce_boundary_to_ts_tz(ts: pd.Series, dt) -> pd.Timestamp:
 ##     get  local DST switch dates       ##
 ############################# 
 
-def get_local_dst_switch_dates(df: pd.DataFrame, ts_col: str) -> set:
+def get_local_dst_switch_dates(df, ts_col):
     """
-    Return dates (as datetime.date) that are DST transition days for the given local tz series.
-    Only meaningful if `ts_col` is local time (e.g., 'cet_cest_timestamp'). It counts the
-    hours of a local calender day and returns the days with a count not equal to 24 
-    as switch days. 
+    Detect DST transition days by detecting changes in UTC offset.
+    Works for tz-aware pandas Timestamp Series (e.g., CET/CEST).
     """
     s = df[ts_col]
     if s.dt.tz is None:
         return set()
-    # Count distinct local hours per calendar day; 23 or 25 implies a DST switch day.
-    per_day = s.groupby(s.dt.date).apply(lambda x: x.dt.hour.nunique())
-    return set(per_day.index[(per_day != 24)].tolist())
+
+    # Use Timestamp.utcoffset() directly
+    offsets = s.apply(lambda ts: ts.utcoffset())
+
+    # Detect transitions where UTC offset changes between adjacent rows
+    transitions = offsets.diff().fillna(pd.Timedelta(0)) != pd.Timedelta(0)
+
+    # Extract the calendar dates where transitions occur
+    return set(s.loc[transitions].dt.date)
+
 
 
 def aggregate_hourly_profile(
