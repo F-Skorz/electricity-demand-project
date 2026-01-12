@@ -40,10 +40,12 @@ def make_weekday_mask(
 
     Hour-ending convention
     ----------------------
-    If your timestamps label the *end* of the hour (OPSD/ENTSO-E style), set
-    `treat_as_hour_end=True` (default). This computes the weekday at `t - epsilon`
-    (inside the hour [t-1h, t)) so an hour ending at local midnight counts toward
-    the *preceding* local day. `epsilon` defaults to 1ns to avoid DST pitfalls.
+    If  timestamps label the *end* of the hour (OPSD/ENTSO-E convention),  
+    setting
+    `treat_as_hour_end=True` (default) 
+    will make `.dt.weekday` return the weekday at `t - epsilon`.
+    An hour ending at local midnight counts toward
+    the *preceding* local day. `epsilon` defaults to 1ns.
 
     Assumptions
     -----------
