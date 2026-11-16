@@ -57,7 +57,7 @@ electricity-demand-project/
 - `OPSD_60min_df`: full OPSD time series
 - `OPSD_60min_de_lu_df`: Subframe of Germany and Luxembourg related Columns
 - `DE_hol_df`: national holiday/school-free calendar (daily)
-- `DE_DWD_hist_df`: historical weather data from 
+- `DE_DWD_hist_df`: historical weather data from the DWD
 
 ---
 
