@@ -103,24 +103,20 @@ def _coerce_boundary_to_ts_tz(ts: pd.Series, dt) -> pd.Timestamp:
 ##     get  local DST switch dates       ##
 ############################# 
 
-def get_local_dst_switch_dates(df, ts_col):
+def get_local_dst_switch_dates(df, ts_col, *, treat_as_hour_end=True, epsilon="1ns"):
     """
-    Detect DST transition days by detecting changes in UTC offset.
-    Works for tz-aware pandas Timestamp Series (e.g., CET/CEST).
+    Lokale Kalendertage (nach Hour-End-Konvention), an denen sich der UTC-Offset ändert.
+    Muss auf dem vollständigen DataFrame laufen, nicht auf einem maskierten Teil.
     """
     s = df[ts_col]
     if s.dt.tz is None:
         return set()
-
-    # Use Timestamp.utcoffset() directly
-    offsets = s.apply(lambda ts: ts.utcoffset())
-
-    # Detect transitions where UTC offset changes between adjacent rows
-    transitions = offsets.diff().fillna(pd.Timedelta(0)) != pd.Timedelta(0)
-
-    # Extract the calendar dates where transitions occur
-    return set(s.loc[transitions].dt.date)
-
+    eff = s - pd.Timedelta(epsilon) if treat_as_hour_end else s
+    local = eff.dt.tz_localize(None)                              # lokale Wanduhrzeit
+    offset = local - eff.dt.tz_convert("UTC").dt.tz_localize(None)
+    day = local.dt.normalize()
+    n_off = offset.groupby(day).nunique()
+    return set(n_off.index[n_off > 1].date)
 
 
 def aggregate_hourly_profile(
@@ -136,39 +132,40 @@ def aggregate_hourly_profile(
     drop_dst_switch_dates: bool = True,
     return_counts: bool = True,
     return_std: bool = False,
+    treat_as_hour_end: bool = True,
+    epsilon: pd.Timedelta | str = "1ns",
 ) -> Tuple[pd.DataFrame, Dict[str, Any]]:
     """
-    Compute an hourly (0–23) aggregated profile of `value_col` over rows that match an optional mask,
-    using day/hour boundaries defined by `ts_col` ('utc_timestamp' or 'cet_cest_timestamp').
-
-    - Filters to [start, end] in the timezone of `ts_col`.
-    - If `ts_col` is local (e.g., CET/CEST) and `drop_dst_switch_dates=True`, excludes DST switch days.
-    - Groups by `ts_col.dt.hour` and aggregates per  `agg`  method(e.g., 'mean','median','sum').
-
-    Returns
-    -------
-    profile_df : DataFrame with columns:
-        hour (int 0..23), value (float), and optionally n, std
-    meta : dict with keys:
-        timestamp_used, date_range, agg, excluded_dates (list[str]), notes
+    Stündliches Profil (0-23). Bei treat_as_hour_end=True bezeichnet ein Stempel das ENDE
+    der Stunde: Stunde, Tageszuordnung, Datumsfenster und DST-Tage beziehen sich auf
+    (ts - epsilon). Fenster [start, end] gilt inklusive, als lokale Kalendertage.
     """
-    if ts_col not in df.columns:
-        raise KeyError(f"The function aggregate_hourly_profile  could not find the column '{ts_col}'.")
-    if value_col not in df.columns:
-        raise KeyError(f"The function aggregate_hourly_profile could not find the column '{value_col}'.")
+    for col in (ts_col, value_col):
+        if col not in df.columns:
+            raise KeyError(f"aggregate_hourly_profile: column '{col}' not found.")
     if not pd.api.types.is_datetime64_any_dtype(df[ts_col]):
-        raise TypeError(f"The function aggregate_hourly_profile does not recognize  '{ts_col}' as datetime-like.")
+        raise TypeError(f"aggregate_hourly_profile: '{ts_col}' is not datetime-like.")
 
-    # Time window filtering in the tz of ts_col
+    # Effektive Zeit: die Stunde, auf die sich der Stempel bezieht
     ts = df[ts_col]
-    start_ts = _coerce_boundary_to_ts_tz(ts, start)
-    end_ts   = _coerce_boundary_to_ts_tz(ts, end)
-    in_window = (ts >= start_ts) & (ts <= end_ts)
+    eff = ts - pd.Timedelta(epsilon) if treat_as_hour_end else ts
+    eff_local = eff.dt.tz_localize(None)          # lokale Wanduhrzeit (naiv)
+    eff_day = eff_local.dt.normalize()
 
-    # Mask handling
+    # Fenster nach effektivem Kalendertag
+    def _to_day(x):
+        t = pd.Timestamp(x)
+        if t.tzinfo is not None:
+            t = t.tz_localize(None)
+        return t.normalize()
+
+    start_day, end_day = _to_day(start), _to_day(end)
+    in_window = (eff_day >= start_day) & (eff_day <= end_day)
+
+    # Maske
     if mask is not None:
         if len(mask) != len(df):
-            raise ValueError("The function aggregate_hourly_profile found: The provided mask's length does not match DataFrame's length. ")
+            raise ValueError("aggregate_hourly_profile: mask length does not match DataFrame length.")
         mask_eff = mask.fillna(False)
         mask_desc = "provided mask"
     elif mask_fn is not None:
@@ -177,55 +174,44 @@ def aggregate_hourly_profile(
     else:
         mask_eff = pd.Series(True, index=df.index)
         mask_desc = "no mask"
-    
-    # combine time-window and mask selection
-    sel = in_window & mask_eff
-    # reduce DataFrame to sel rows, and ts_col, value_col 
-    work = df.loc[sel, [ts_col, value_col]].copy()
 
-    # Optionally drop DST switch dates (only meaningful for local tz)
+    sel = in_window & mask_eff
+
+    # DST-Tage auf dem VOLLEN df bestimmen, dann über effektiven Tag ausschließen
     excluded_dates: list[str] = []
-    if drop_dst_switch_dates and work[ts_col].dt.tz is not None:
-        # If the series is local (like CET/CEST), drop days with != 24 unique hours.
-        # For UTC (fixed offset), get_local_dst_switch_dates will typically return empty.
-        switch_dates = get_local_dst_switch_dates(work, ts_col)
+    if drop_dst_switch_dates and ts.dt.tz is not None:
+        switch_dates = get_local_dst_switch_dates(
+            df, ts_col, treat_as_hour_end=treat_as_hour_end, epsilon=epsilon
+        )
         if switch_dates:
             excluded_dates = [d.isoformat() for d in sorted(switch_dates)]
-            work = work[~work[ts_col].dt.date.isin(switch_dates)]
+            sel = sel & ~eff_day.dt.date.isin(switch_dates)
 
-    if work.empty:
-        # Return an empty 0..23 frame for consistency
-        out = pd.DataFrame({"hour": np.arange(24, dtype=int), "value": np.nan})
-        meta = {
-            "timestamp_used": ts_col,
-            "date_range": (start_ts.isoformat(), end_ts.isoformat()),
-            "agg": agg,
-            "excluded_dates": excluded_dates,
-            "mask_desc": mask_desc,
-            "notes": "No rows after filtering.",
-        }
-        return out, meta
-
-    work["hour"] = work[ts_col].dt.hour
-
-    # Aggregate
-    grouped = work.groupby("hour")[value_col]
-    agg_series = getattr(grouped, agg)() if hasattr(grouped, agg) else grouped.aggregate(agg)
-    out = agg_series.rename("value").reindex(range(24)).reset_index()
-
-    if return_counts:
-        out = out.merge(grouped.size().rename("n").reindex(range(24)).reset_index(), on="hour", how="left")
-    if return_std:
-        out = out.merge(grouped.std(ddof=1).rename("std").reindex(range(24)).reset_index(), on="hour", how="left")
+    work = pd.DataFrame({"hour": eff_local.dt.hour[sel], value_col: df.loc[sel, value_col]})
 
     meta = {
         "timestamp_used": ts_col,
-        "date_range": (start_ts.isoformat(), end_ts.isoformat()),
+        "date_range": (start_day.date().isoformat(), end_day.date().isoformat()),
         "agg": agg,
         "excluded_dates": excluded_dates,
         "mask_desc": mask_desc,
+        "hour_end_convention": treat_as_hour_end,
         "notes": "",
     }
+
+    if work.empty:
+        meta["notes"] = "No rows after filtering."
+        return pd.DataFrame({"hour": np.arange(24, dtype=int), "value": np.nan}), meta
+
+    grouped = work.groupby("hour")[value_col]
+    agg_series = getattr(grouped, agg)() if hasattr(grouped, agg) else grouped.aggregate(agg)
+    out = agg_series.rename("value").reindex(range(24)).rename_axis("hour").reset_index()
+
+    if return_counts:
+        out = out.merge(grouped.size().rename("n").reindex(range(24)).rename_axis("hour").reset_index(), on="hour", how="left")
+    if return_std:
+        out = out.merge(grouped.std(ddof=1).rename("std").reindex(range(24)).rename_axis("hour").reset_index(), on="hour", how="left")
+
     return out, meta
 
 
