@@ -29,8 +29,9 @@ electricity-demand-project/
 │   ├── config.py
 │   ├── de_hol_df.py
 │   ├── dwd_utils.py                                  # download helper and DataFrame builders
-│   ├── eda_utils.py                                   # missingness summaries
-│   ├── filter_group_agg.py                       # filter, group, aggregate
+│   ├── eda_utils.py                                # missingness summaries
+│   ├── feature_anal_eng.py                                  
+│   ├── filter_group_aggr_utils.py           # filter, group, aggregate
 │   ├── load_data.py
 │   ├── plotting_utils.py
 │   └── data_modules/

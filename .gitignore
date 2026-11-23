@@ -56,7 +56,7 @@ data/processed/*
 
 
 
-common large/binary formats (CSV stays allowed)
+# common large/binary formats (CSV stays allowed)
 
 *.feather
 *.h5
