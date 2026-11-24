@@ -924,15 +924,18 @@ def fig_to_rgb_array(fig):
 ##       plot_weekday_set                  ##
 #############################
 
-
 def plot_weekday_set(ax, profiles, title, ylabel=None, xlabel=False):
-    # profiles: list of (label, df_with_columns_hour_value)
     for label, prof in profiles:
-        ax.plot(prof["hour"], prof["value"], label=label)
+        ax.plot(prof["hour"] + 1, prof["value"], label=label)
+
+    ax.set_xlim(1, 24)
+    ax.set_xticks([1, 6, 12, 18, 24])
+
     if xlabel:
-        ax.set_xlabel("Hour of day (0–23)")
+        ax.set_xlabel("Hour of day")
     if ylabel:
         ax.set_ylabel(ylabel)
+
     ax.set_title(title)
     ax.grid(True, alpha=0.3)
     ax.legend(ncols=2, fontsize=8)
